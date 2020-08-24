@@ -19,6 +19,7 @@
     <script>
         var elapsed = .25;
         var minutes = 60;
+        var starttime = Date.now();
 
         var mousedown = false;
         var canvas = document.getElementById('canvas');
@@ -40,9 +41,19 @@
 
             // draw scale
 
-            var textX = (canvasSize / 2) + (radius + 30) * Math.cos((-.5 - percent * 2) * Math.PI);
-            var textY = 15 + (canvasSize / 2) + (radius + 30) * Math.sin((-.5 - percent * 2) * Math.PI);
+            for (var i = 0; i < ((minutes / 5) * elapsed); i++) {
+                var scaleX = (canvasSize / 2) + (radius + 10) * Math.cos((-.5 - (i / (minutes / 5)) * 2) * Math.PI);
+                var scaleY = (canvasSize / 2) + (radius + 10) * Math.sin((-.5 - (i / (minutes / 5)) * 2) * Math.PI);
+                ctx.beginPath();
+                ctx.arc(scaleX, scaleY, 2.5, 0, Math.PI * 2);
+                ctx.fillStyle = '#000000';
+                ctx.fill();
+            }
 
+            var textX = (canvasSize / 2) + (radius + 35) * Math.cos((-.5 - percent * 2) * Math.PI);
+            var textY = 15 + (canvasSize / 2) + (radius + 35) * Math.sin((-.5 - percent * 2) * Math.PI);
+
+            ctx.beginPath();
             ctx.font = 'bold 30px sans-serif';
             ctx.textAlign = 'center';
             ctx.fillStyle = '#000000';
@@ -50,6 +61,7 @@
 
             // draw disc
 
+            ctx.beginPath();
             ctx.moveTo(canvasSize / 2, canvasSize / 2);
             ctx.arc(canvasSize / 2, canvasSize / 2, radius, arcStart, 1.5 * Math.PI);
             ctx.fillStyle = '#ff0000';
@@ -67,20 +79,30 @@
             return 1 - alpha / 360;
         }
 
+        function setTimeByCoordinates(x, y) {
+            starttime = Date.now();
+            var elapsedInPercent = getPercentByCoordinates(x,y);
+            elapsed = Math.round(elapsedInPercent * minutes) / 60;
+            render(elapsed);
+        }
+
         setInterval(function() {
-            render
-        }, 500);
+            if (!mousedown) {
+                var elapsedInMs = elapsed * minutes * 60 * 1000;
+                elapsed = (elapsedInMs - 100) / minutes / 60 / 1000;
+                render(elapsed);
+            }
+        }, 100);
 
         canvas.addEventListener('mousemove', function (e) {
             if (mousedown) {
-                console.log(e);
-                render(getPercentByCoordinates(e.offsetX, e.offsetY));
+                setTimeByCoordinates(e.offsetX, e.offsetY);
             }
         });
 
         canvas.addEventListener('mousedown', function (e) {
             mousedown = true;
-            render(getPercentByCoordinates(e.offsetX, e.offsetY));
+            setTimeByCoordinates(e.offsetX, e.offsetY);
         });
 
         document.addEventListener('mouseup', function () {
