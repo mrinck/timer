@@ -1,0 +1,95 @@
+<html>
+
+<head>
+    <title>Timer</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <canvas id="canvas"></canvas>
+    </div>
+    <script>
+        var elapsed = .25;
+        var minutes = 60;
+
+        var mousedown = false;
+        var canvas = document.getElementById('canvas');
+        var ctx = canvas.getContext('2d');
+        var canvasSize = 400;
+        var radius = 150;
+
+        canvas.width = canvasSize;
+        canvas.height = canvasSize;
+
+        function render(percent) {
+            var minute = Math.ceil(minutes * percent);
+            var arcStart = Math.PI - (-.5 + 2 * percent) * Math.PI;
+
+            // clear canvas
+
+            ctx.clearRect(0, 0, canvasSize, canvasSize);
+            ctx.beginPath();
+
+            // draw scale
+
+            var textX = (canvasSize / 2) + (radius + 30) * Math.cos((-.5 - percent * 2) * Math.PI);
+            var textY = 15 + (canvasSize / 2) + (radius + 30) * Math.sin((-.5 - percent * 2) * Math.PI);
+
+            ctx.font = 'bold 30px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#000000';
+            ctx.fillText(minute, textX, textY);
+
+            // draw disc
+
+            ctx.moveTo(canvasSize / 2, canvasSize / 2);
+            ctx.arc(canvasSize / 2, canvasSize / 2, radius, arcStart, 1.5 * Math.PI);
+            ctx.fillStyle = '#ff0000';
+            ctx.fill();
+        };
+
+        function getPercentByCoordinates(x, y) {
+            var cx = x - canvasSize / 2;
+            var cy = canvasSize / 2 - y;
+
+            var offset = 270;
+            if (cx >= 0) { offset = 90 }
+
+            var alpha = offset - (Math.atan(cy / cx) * (180 / Math.PI));
+            return 1 - alpha / 360;
+        }
+
+        setInterval(function() {
+            render
+        }, 500);
+
+        canvas.addEventListener('mousemove', function (e) {
+            if (mousedown) {
+                console.log(e);
+                render(getPercentByCoordinates(e.offsetX, e.offsetY));
+            }
+        });
+
+        canvas.addEventListener('mousedown', function (e) {
+            mousedown = true;
+            render(getPercentByCoordinates(e.offsetX, e.offsetY));
+        });
+
+        document.addEventListener('mouseup', function () {
+            mousedown = false;
+        });
+
+        render(elapsed);
+
+    </script>
+</body>
+
+</html>
