@@ -1,13 +1,17 @@
 <html>
-
 <head>
     <title>Timer</title>
+    <script type="text/javascript" src="./timer.js"></script>
     <style>
         body {
             margin: 0;
             display: flex;
             justify-content: center;
             align-items: center;
+        }
+
+        canvas {
+            border: 1px solid red;
         }
     </style>
 </head>
@@ -16,101 +20,9 @@
     <div class="container">
         <canvas id="canvas"></canvas>
     </div>
+
     <script>
-        var elapsed = .25;
-        var minutes = 60;
-        var starttime = Date.now();
-
-        var mousedown = false;
-        var canvas = document.getElementById('canvas');
-        var ctx = canvas.getContext('2d');
-        var canvasSize = 400;
-        var radius = 150;
-
-        canvas.width = canvasSize;
-        canvas.height = canvasSize;
-
-        function render(percent) {
-            var minute = Math.ceil(minutes * percent);
-            var arcStart = Math.PI - (-.5 + 2 * percent) * Math.PI;
-
-            // clear canvas
-
-            ctx.clearRect(0, 0, canvasSize, canvasSize);
-            ctx.beginPath();
-
-            // draw scale
-
-            for (var i = 0; i < ((minutes / 5) * elapsed); i++) {
-                var scaleX = (canvasSize / 2) + (radius + 10) * Math.cos((-.5 - (i / (minutes / 5)) * 2) * Math.PI);
-                var scaleY = (canvasSize / 2) + (radius + 10) * Math.sin((-.5 - (i / (minutes / 5)) * 2) * Math.PI);
-                ctx.beginPath();
-                ctx.arc(scaleX, scaleY, 2.5, 0, Math.PI * 2);
-                ctx.fillStyle = '#000000';
-                ctx.fill();
-            }
-
-            var textX = (canvasSize / 2) + (radius + 35) * Math.cos((-.5 - percent * 2) * Math.PI);
-            var textY = 15 + (canvasSize / 2) + (radius + 35) * Math.sin((-.5 - percent * 2) * Math.PI);
-
-            ctx.beginPath();
-            ctx.font = 'bold 30px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillStyle = '#000000';
-            ctx.fillText(minute, textX, textY);
-
-            // draw disc
-
-            ctx.beginPath();
-            ctx.moveTo(canvasSize / 2, canvasSize / 2);
-            ctx.arc(canvasSize / 2, canvasSize / 2, radius, arcStart, 1.5 * Math.PI);
-            ctx.fillStyle = '#ff0000';
-            ctx.fill();
-        };
-
-        function getPercentByCoordinates(x, y) {
-            var cx = x - canvasSize / 2;
-            var cy = canvasSize / 2 - y;
-
-            var offset = 270;
-            if (cx >= 0) { offset = 90 }
-
-            var alpha = offset - (Math.atan(cy / cx) * (180 / Math.PI));
-            return 1 - alpha / 360;
-        }
-
-        function setTimeByCoordinates(x, y) {
-            starttime = Date.now();
-            var elapsedInPercent = getPercentByCoordinates(x,y);
-            elapsed = Math.round(elapsedInPercent * minutes) / 60;
-            render(elapsed);
-        }
-
-        setInterval(function() {
-            if (!mousedown) {
-                var elapsedInMs = elapsed * minutes * 60 * 1000;
-                elapsed = (elapsedInMs - 100) / minutes / 60 / 1000;
-                render(elapsed);
-            }
-        }, 100);
-
-        canvas.addEventListener('mousemove', function (e) {
-            if (mousedown) {
-                setTimeByCoordinates(e.offsetX, e.offsetY);
-            }
-        });
-
-        canvas.addEventListener('mousedown', function (e) {
-            mousedown = true;
-            setTimeByCoordinates(e.offsetX, e.offsetY);
-        });
-
-        document.addEventListener('mouseup', function () {
-            mousedown = false;
-        });
-
-        render(elapsed);
-
+        new Timer(document.getElementById('canvas'), 400);
     </script>
 </body>
 
