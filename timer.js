@@ -2,22 +2,17 @@ class Timer {
     canvas;
     ctx;
 
-    radius;
+    radius = 150;
 
     startTime = Date.now();
-    scaleLength = 15 * 60 * 1000;
+    scaleLength = 60 * 60 * 1000;
+    timerLength = this.scaleLength;
 
-    mousedown;
+    mousedown = false;
 
-    constructor(canvas, canvasSize) {
+    constructor(canvas) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
-
-        this.mousedown = false;
-        this.radius = 150;
-
-        this.canvas.width = canvasSize;
-        this.canvas.height = canvasSize;
 
         this.canvas.addEventListener('mousemove', e => {
             if (this.mousedown) {
@@ -34,65 +29,29 @@ class Timer {
             this.mousedown = false;
         });
 
+        window.addEventListener('resize', () => {
+            this.resizeCanvas();
+        });
+
+        setInterval(() => {
+            if (!this.mousedown) {
+                this.render();
+            }
+        }, 33);
+
+        this.resizeCanvas()
         this.render();
     }
 
-    getETA() {
-        return this.startTime + this.scaleLength;
+    resizeCanvas() {
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
     }
 
-    getAngelByMillisecond(ms) {
-        return (1.5 - 2 * (1 - this.getPercentByMilliseconds(ms))) * Math.PI;
-    }
-
-    getPercentByMilliseconds(ms) {
-        return ms / (this.minutes * 60 * 1000);
-    }
-
-    render() {
-        const ms = Date.now() - this.startTime;
-        var minute = Math.ceil(this.minutes * (ms / this.scaleLength));
-
-        // clear canvas
-
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        this.ctx.beginPath();
-
-        // draw scale
-
-        /*
-        for (var i = 0; i < ((this.minutes / 5) * this.elapsed); i++) {
-            var scaleX = (this.size / 2) + (this.radius + 10) * Math.cos((-.5 - (i / (this.minutes / 5)) * 2) * Math.PI);
-            var scaleY = (this.size / 2) + (this.radius + 10) * Math.sin((-.5 - (i / (this.minutes / 5)) * 2) * Math.PI);
-            this.ctx.beginPath();
-            this.ctx.arc(scaleX, scaleY, 2.5, 0, Math.PI * 2);
-            this.ctx.fillStyle = '#000000';
-            this.ctx.fill();
-        }
-        */
-
-        /*
-        var textX = (this.size / 2) + (this.radius + 35) * Math.cos((-.5 - (ms / this.timerLength) * 2) * Math.PI);
-        var textY = 15 + (this.size / 2) + (this.radius + 35) * Math.sin((-.5 - (ms / this.timerLength) * 2) * Math.PI);
-
-        this.ctx.beginPath();
-        this.ctx.font = 'bold 30px sans-serif';
-        this.ctx.textAlign = 'center';
-        this.ctx.fillStyle = '#000000';
-        this.ctx.fillText(minute, textX, textY);
-        */
-
-        // draw disc
-
-        this.ctx.beginPath();
-        this.ctx.moveTo(this.canvas.width / 2, this.canvas.height / 2);
-        this.ctx.arc(this.canvasSize / 2, this.canvasSize / 2, this.radius, 1.2 * Math.PI, this.getAngelByMillisecond(0));
-        this.ctx.fillStyle = '#ff0000';
-        this.ctx.fill();
-    };
-
-    getAngelByTime(time) {
-        return 2 * Math.PI;
+    setTimeByCoordinates(x, y) {
+        this.startTime = Date.now();
+        this.timerLength = this.getMinuteByTime(this.getTimeByCoordinates(x, y)) * 60 * 1000;
+        this.render();
     }
 
     getAngelByCoordinates(x, y) {
@@ -104,16 +63,104 @@ class Timer {
             alpha += (2 * Math.PI);
         }
 
-        return (alpha / Math.PI) - .5;
+        return alpha - (.5 * Math.PI);
     }
 
-    setTimeByCoordinates(x, y) {
-        this.startTime = Date.now();
-        this.scaleLength = this.getMsByCoordinates(x, y);
-        // this.getPercentByMilliseconds(this.timerLength);
+    getTimeByCoordinates(x, y) {
+        const alpha = this.getAngelByCoordinates(x, y);
+        const normalAlpha = alpha + (.5 * Math.PI);
+        const scalePercentage = 1 - (normalAlpha / (2 * Math.PI));
+        return this.scaleLength * scalePercentage;
+    }
 
-        // console.log(this.getAngelByMillisecond(this.timerLength));
+    getAngelByMilliseconds(ms) {
+        const scalePercentage = ms / this.scaleLength;
+        const normalAlpha = (2 * Math.PI) - (2 * Math.PI * scalePercentage);
+        const alpha = normalAlpha - .5 * Math.PI;
+        return alpha;
+    }
 
-        this.render();
+    getMinuteByTime(time) {
+        return Math.ceil(time / (1000 * 60));
+    }
+
+    getCoordinatesByRadiusAndAngel(radius, angel) {
+        return {
+            x: (this.canvas.width / 2) + radius * Math.cos(angel),
+            y: (this.canvas.height / 2) + radius * Math.sin(angel)
+        };
+    }
+
+    getTimeLeft() {
+        return this.startTime + this.timerLength - Date.now();
+    }
+
+    render() {
+        const timeLeft = this.getTimeLeft();
+
+        // clear canvas
+
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        if (timeLeft <= 0) {
+            this.ctx.beginPath();
+            this.ctx.fillStyle = '#ff0000';
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        }
+
+        // draw scale
+
+        /*
+        const minutes = 1 + this.getMinuteByTime(this.timerLength);
+
+        for (let i = 0; i < minutes / 5; i++) {
+            const angel = this.getAngelByMilliseconds(i * 1000 * 60 * 5);
+            const scaleCoordinates = this.getCoordinatesByRadiusAndAngel(this.radius + 10, angel);
+
+            this.ctx.beginPath();
+            this.ctx.arc(scaleCoordinates.x, scaleCoordinates.y, 2.5, 0, Math.PI * 2);
+            this.ctx.fillStyle = '#000000';
+            this.ctx.fill();
+        }
+        */
+
+        // draw text
+
+        const textCoordinates = this.getCoordinatesByRadiusAndAngel(this.radius + 30, this.getAngelByMilliseconds(this.timerLength));
+
+        this.ctx.beginPath();
+        this.ctx.font = '20px sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillStyle = '#000000';
+        this.ctx.fillText(this.getMinuteByTime(this.timerLength), textCoordinates.x, textCoordinates.y + 9);
+
+        // draw disc
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.canvas.width / 2, this.canvas.height / 2);
+        this.ctx.arc(this.canvas.width / 2, this.canvas.height / 2, this.radius, this.getAngelByMilliseconds(this.timerLength), this.getAngelByMilliseconds(0));
+        this.ctx.fillStyle = '#fee';
+        this.ctx.fill();
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.canvas.width / 2, this.canvas.height / 2);
+        this.ctx.arc(this.canvas.width / 2, this.canvas.height / 2, this.radius, this.getAngelByMilliseconds(timeLeft), this.getAngelByMilliseconds(0));
+        this.ctx.fillStyle = '#ff0000';
+        this.ctx.fill();
+
+        const endLineCoordinates = this.getCoordinatesByRadiusAndAngel(this.radius + 15, this.getAngelByMilliseconds(0));
+        const startLineCoordinates = this.getCoordinatesByRadiusAndAngel(this.radius + 15, this.getAngelByMilliseconds(this.timerLength));
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.canvas.width / 2, this.canvas.height / 2);
+        this.ctx.lineTo(startLineCoordinates.x, startLineCoordinates.y);
+        this.ctx.strokeStyle = '#000';
+        this.ctx.stroke();
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.canvas.width / 2, this.canvas.height / 2);
+        this.ctx.lineTo(endLineCoordinates.x, endLineCoordinates.y);
+        this.ctx.strokeStyle = '#000';
+        this.ctx.stroke();
     }
 }
